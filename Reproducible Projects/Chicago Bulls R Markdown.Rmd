@@ -1,0 +1,902 @@
+---
+title: "Chicago Bulls R Markdown"
+author: "Leanne Szeto"
+date: "5/8/2021"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Introduction
+## In a basketball game, the objective of each team is to score more points than the other team to be the winner. As a team sport consisting of five players, each team player requires default skill set of their specific roles. 
+## I am a data analyst for a National basketball team, the Chicago Bulls. My major job is to interpret both on-field and off-field data from my team, such as individual athlete performance data and team scores etc, in order to look for meaningful insight and improvement plans. In the last NBA season, my team placed 27th out of 30 and my current project is to carry out data analysis based on the previous season and players related statistics. The winning percentage can be manipulated by reproducible data analysis. I also work with the general manager of the Chicago Bull on selecting the best team members through player’s individual performance data in conjunction with the best winning tactics. The team budget of $118 million is taken into account, in order to form the best performing team in the coming season.
+
+## Load required packages
+
+```{r message=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(car)
+library(broom)
+```
+
+## 2. Reading and cleaning the raw data
+## To begin with, the team winning percentage will first be considered. With the five data sets provided, the two 2018-2019 NBA team statistics files are first be read and combined to one data set. All variables from these two files are included at this first stage. No missing values are shown. Instead of using the Wins(W) and Loses(L) data values, Winning Percentage (win_per) is calculated by (Wins / Total Games*100%) to get a continuous factor valuables for further expression. The remaining two data sets of player statistics and player salaries, as well as the expected player contracts budge,  will be considered at the later stage.
+
+## Data source
+```{r}
+df <- read.csv("~/Desktop/Reproducible Projects/Data/Raw/2018-19_nba_team-statistics_1.csv")
+df2 <- read.csv("~/Desktop/Reproducible Projects/Data/Raw/2018-19_nba_team-statistics_2.csv")
+data_both <- left_join(df,df2, by = "Team")
+```
+
+
+
+```{r}
+str(data_both)
+```
+
+
+```{r}
+head(data_both)
+```
+
+
+```{r}
+tail(data_both)
+```
+
+
+
+
+```{r message=FALSE}
+## check duplicated values
+duplicated(data_both)
+```
+
+
+
+
+```{r}
+## Handling Missing values
+complete(data_both)
+sum(is.na(data_both))
+which(is.na(data_both), arr.ind = TRUE)
+naniar::vis_miss(data_both)
+
+```
+
+```{r}
+data_both[is.na(data_both)] = 0
+```
+
+```{r}
+sum(is.na(data_both))
+```
+
+```{r}
+# calculating wining percentage(continuous variables)
+
+data_both <- mutate(data_both, win_per = W/G * 100)
+data_both$win_per <- round(data_both$win_per, 2)
+```
+
+## 3. Exploratory analysis
+
+## To create visualisation to determine how each individual explanatory variable (ORtg, DRtg, MP, FG, etc.) relates to the winning percentage (win_per), total 34 plots are formed by plotting winning percentage against each variables form the combined data set. 
+
+
+```{r}
+## Relationship between offensive rating and win%
+ggplot(data = data_both, aes(x = ORtg, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+```{r}
+with(data_both, cor(x = ORtg, y = win_per))
+```
+
+
+```{r}
+## Relationship between defensive rating and win%
+ggplot(data = data_both, aes(x = DRtg, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = DRtg, y = win_per))
+```
+
+
+
+
+```{r}
+## Relationship between Net rating and win%
+ggplot(data = data_both, aes(x = NRtg, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = NRtg, y = win_per))
+```
+
+
+```{r}
+## Relationship between Pace and win%
+ggplot(data = data_both, aes(x = Pace, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+
+```
+
+```{r}
+with(data_both, cor(x = Pace, y = win_per))
+```
+
+
+
+```{r}
+## Relationship between free throw attempt rate and win%
+ggplot(data = data_both, aes(x = FTr, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = FTr, y = win_per))
+```
+
+
+```{r}
+## Relationship between 3-points attempt rate and win%
+ggplot(data = data_both, aes(x = X3PAr, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+with(data_both, cor(x = X3PAr, y = win_per))
+```
+
+
+
+```{r}
+## Relationship between true shooting%  and win%
+## Points/[2*(Field Goals Attempted + 0.44 * Free Throws Attempted)]
+ggplot(data = data_both, aes(x = TS. , y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+
+```{r}
+with(data_both, cor(x = TS. , y = win_per))
+```
+
+
+```{r}
+## Relationship between effective field goal% and win%
+## ((FGM + 0.5 * 3PM)) / FGA
+ggplot(data = data_both, aes(x = eFG. , y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+
+```{r}
+with(data_both, cor(x = eFG. , y = win_per))
+```
+
+
+
+```{r}
+
+## Relationship between turnover% and win%
+ggplot(data = data_both, aes(x = TOV. , y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = TOV. , y = win_per))
+```
+
+
+
+```{r}
+## Relationship between offensive rebound% and win%
+ggplot(data = data_both, aes(x = ORB. , y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+with(data_both, cor(x = ORB. , y = win_per))
+```
+
+
+```{r}
+##Relationship between free throws per field goal attempt and win%
+ggplot(data = data_both, aes(x = FT.FGA , y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = FT.FGA , y = win_per))
+```
+
+
+```{r}
+## Relationship between defensive rebound% and win%
+ggplot(data = data_both, aes(x = DRB. , y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+
+```
+
+
+```{r}
+with(data_both, cor(x = DRB. , y = win_per))
+```
+
+
+
+```{r}
+
+## Relationship between minutes played and win%
+ggplot(data = data_both, aes(x = MP, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+with(data_both, cor(x = MP, y = win_per))
+```
+
+
+
+```{r}
+## Relationship between field goal and win%
+ggplot(data = data_both, aes(x = FG, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+with(data_both, cor(x = FG, y = win_per))
+```
+
+
+
+```{r}
+## Relationship between field goal attempt and win%
+ggplot(data = data_both, aes(x = FGA, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = FGA, y = win_per))
+```
+
+
+
+```{r}
+## Relationship between field goal% and win%
+data_both$FG. <- data_both$FG. * 100
+ggplot(data = data_both, aes(x = FG., y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = FG., y = win_per))
+```
+
+
+```{r}
+
+## Relationship between 3-points field goal and win%
+ggplot(data = data_both, aes(x = X3P, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+with(data_both, cor(x = X3P, y = win_per))
+
+```
+
+
+```{r}
+## Relationship between 3-points field goal attemp and win%
+ggplot(data = data_both, aes(x = X3PA, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+with(data_both, cor(x = X3PA, y = win_per))
+```
+
+
+
+```{r}
+## Relationship between 3-points field goal% and win%
+data_both$X3P. <- data_both$X3P. * 100
+ggplot(data = data_both, aes(x = X3P., y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+
+```{r}
+with(data_both, cor(x = X3P., y = win_per))
+```
+
+
+```{r}
+
+## Relationship between 2-points field goal and win%
+ggplot(data = data_both, aes(x = X2P, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+with(data_both, cor(x = X2P, y = win_per))
+```
+
+
+
+
+```{r}
+## Relationship between 2-points field goal attempt and win%
+ggplot(data = data_both, aes(x = X2PA, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+with(data_both, cor(x = X2PA, y = win_per))
+```
+
+
+
+
+```{r}
+## Relationship between 2-points fiels goals% and win%
+data_both$X2P. <- data_both$X2P. * 100
+ggplot(data = data_both, aes(x = X2P., y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = X2P., y = win_per))
+```
+
+
+
+
+
+```{r}
+## Relationship between free throw and win%
+ggplot(data = data_both, aes(x = FT, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = FT, y = win_per))
+```
+
+
+```{r}
+## ## Relationship between free throw attempt and win%
+ggplot(data = data_both, aes(x = FTA, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+with(data_both, cor(x = FTA, y = win_per))
+```
+
+
+```{r}
+## ## Relationship between free throw% and win%
+data_both$FT. <- data_both$FT. * 100
+ggplot(data = data_both, aes(x = FT. , y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = FT. , y = win_per))
+```
+
+
+
+```{r}
+##Relationship between offensive rebounds and win%
+ggplot(data = data_both, aes(x = ORB, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = ORB, y = win_per))
+```
+
+
+
+```{r}
+## Relationship between defensive rebounds and win%
+ggplot(data = data_both, aes(x = DRB, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = DRB, y = win_per))
+```
+
+
+
+```{r}
+## Relationship between total rebounds and win%
+ggplot(data = data_both, aes(x = TRB, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = TRB, y = win_per))
+```
+
+
+
+```{r}
+## Relationship between assist and win%
+ggplot(data = data_both, aes(x = AST, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = AST, y = win_per))
+```
+
+
+```{r}
+## Relationship between steal and win%
+ggplot(data = data_both, aes(x = STL, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = STL, y = win_per))
+```
+
+
+
+
+
+```{r}
+## Relationship between block and win%
+ggplot(data = data_both, aes(x = BLK, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = BLK, y = win_per))
+```
+
+
+
+
+
+```{r}
+## Relationship between turnover and win%
+ggplot(data = data_both, aes(x = TOV, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+with(data_both, cor(x = TOV, y = win_per))
+```
+
+
+
+```{r}
+## Relationship between personal foul and win%
+ggplot(data = data_both, aes(x = PF, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+
+with(data_both, cor(x = PF, y = win_per))
+```
+
+
+
+
+```{r}
+## Relationship between points and win%
+ggplot(data = data_both, aes(x = PTS, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = PTS, y = win_per))
+```
+
+
+```{r}
+## Relationship between age and win%
+ggplot(data = data_both, aes(x = Age, y = win_per)) +
+  geom_point(colour = "black") +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+with(data_both, cor(x = Age, y = win_per))
+```
+
+
+## Multiple Linear Regression
+## By investigating on the above plots, 4 variables with high strength of the winning percentage relationship as well as P-value, are considered for further data modelling.
+## 1) TS. (true shoot percentage) 
+## 2) TOV (turn over)
+## 3) TRB (total rebound)
+## 4) Age
+
+##TS. + TOV + TRB + Age 
+
+```{r}
+fit <- lm(win_per ~  TS. + TOV + TRB + Age  , data = data_both)
+tidy(fit, conf.int = TRUE)
+```
+
+
+```{r}
+summary(fit)
+```
+## 4. Data modelling and results
+
+## A multiple linear regression is then conducted to model win_per based on  the four selected variables (TS., TOV, TRB, Age) to get the correlation coefficient value for the preliminary model formula. 
+
+______________________
+## Independence
+## By using durbinWatson Test, the D-W statistic is 1.44 which is under value of 2.0. Thus, the model is assumed to be independence of observations.
+
+```{r}
+car::durbinWatsonTest(fit)
+```
+
+## Outliers
+## All plots are within the range of -3 to +3. Therefore, it is considered to be no outliner.
+```{r}
+std_res <- rstandard(fit)
+points <- 1:length(std_res)
+
+ggplot(data = NULL, aes(x = points, y = std_res))+
+  geom_point() +
+  ylim(c(-4,4)) +
+  geom_hline(yintercept = c (-3,3), colour = "blue", linetype = "dashed")
+
+```
+
+
+
+
+## Leverage Points
+## There are no hat values greater than 1, it is considered that there are no high leverage points that may have potential to influence the model.
+
+```{r}
+
+hats <- hatvalues(fit)
+
+ggplot(data = NULL, aes(x = points, y = hats)) +
+  geom_point()
+
+```
+
+
+```{r}
+
+hat_labels <- if_else(hats >= 0.4, paste(points), "")
+
+ggplot(data = NULL, aes(x = points, y = hats)) +
+  geom_point() +
+  geom_text(aes(label = hat_labels), nudge_y = 0.02)
+
+```
+
+
+
+## Influential points
+## Two plot are found (10 and 18) bit far away from the other points, which may have high influence, these two points would be filtered out when creating the new model. Removing these points has improved the R-squared value from 0.82 to 0.8682.
+```{r}
+
+cook <- cooks.distance(fit)
+
+ggplot(data = NULL, aes(x = points, y = cook)) +
+  geom_point()
+```
+
+```{r}
+cook_labels <- if_else(cook >= 0.1, paste(points), "")
+
+ggplot(data = NULL, aes( x = points, y = cook)) +
+  geom_point() +
+  geom_text(aes(label = cook_labels), nudge_y = 0.02)
+```
+
+```{r}
+## Remove Potentially High Influence Points
+outliers <-c(7,12)
+filtered_df <- data_both %>%
+  filter(!Rk.x %in% outliers)
+```
+
+
+```{r}
+fit2 <- lm(win_per ~ TS. + TOV + TRB + Age   , data = filtered_df)
+tidy(fit2, conf.int = TRUE)
+```
+
+
+```{r}
+summary(fit2)
+```
+
+## Homoscedasticity
+## The plot does not show evidence of heteroscedasticity. It is considered to be Homoscedasiticity.
+```{r}
+res <- residuals(fit2)
+fitted <- predict(fit2)
+
+ggplot( data = NULL, aes(x = fitted, y = res))+
+  geom_point(colour = "dodgerblue")+
+  geom_hline(yintercept = 0, colour = "red", linetype = "dashed")
+```
+
+
+
+#Normality
+## The conducted histogram looks normal, which supports model normality.
+```{r}
+ggplot(data = NULL, aes(x = res)) +
+  geom_histogram(colour = "black", fill = "pink", binwidth = 4)
+
+ggplot(data = NULL, aes(sample = res)) +
+  stat_qq() + stat_qq_line()
+```
+
+#Multicollinearity
+## All vif values are < 4, which supports the model to have no multicollinearity influencing the standard errors of the coefficients.
+
+```{r}
+car::vif(fit2)
+```
+
+
+##Linearity
+
+```{r}
+car::avPlots(fit2)
+```
+
+## Compare
+```{r}
+filtered_df <- mutate(filtered_df, exp_win = -369 + TS. * 426.9 + TOV * -0.04355 + TRB * 0.03569 + Age * 3.73282)
+
+ggplot(data = filtered_df, aes(x = win_per, y = exp_win)) +
+  geom_point()+
+  geom_abline()
+```
+
+```{r}
+with(filtered_df, cor(x = win_per, y = exp_win))
+```
+
+
+## Players
+
+
+```{r}
+## combining player data and salaries
+
+p <- read.csv("~/Desktop/Reproducible Projects/Data/Raw/2018-19_nba_player-statistics.csv")
+ps <- read.csv("~/Desktop/Reproducible Projects/Data/Raw/2018-19_nba_player-salaries.csv")
+pms <- left_join(p,ps, by = "player_name")
+
+```
+
+
+## Handling missing data
+```{r}
+complete(pms)
+sum(is.na(pms))
+which(is.na(pms), arr.ind = TRUE)
+naniar::vis_miss(pms)
+
+```
+
+```{r}
+pms[is.na(pms)] = 0
+```
+
+
+```{r}
+sum(is.na(pms))
+```
+## 5. Player recommendations
+
+## After developing the winning percentage model based on team statistic, the model can next be applied on team player selection by introducing team player statistic. The two provided data sets of team player statistics and team player salaries are first combined. No missing values are found with the chosen data (player_id,Age, TM,GS,POS,PTS,FGS,FTA,TOV,TRB,salary) for interpretation. By considering some players with limited game starts who may give a very high true shooting percentage, only player with game start >41games (half-season) is considered in this model.
+
+
+
+## filtered player data
+```{r}
+pmsf <- subset(pms, select = c("player_name", "player_id","Age" ,"Tm", "GS", "Pos", "PTS","FGA","FTA", "TOV","TRB", "salary"))
+
+## game start more than 41 games will be considered (Half of the regular season)
+pmsf <- pmsf %>% filter( GS >= 41)
+
+## calculating true shooting%
+## TS. = Points/[2*(Field Goals Attempted + 0.44 * Free Throws Attempted)]
+pmsf <- mutate(pmsf, TS. = PTS/(2*(FGA + 0.44* FTA)))
+
+pmsf <- mutate(pmsf, win_score = -369 + TS. * 426.9 + TOV * -0.04355 + TRB * 0.03569 + Age * 3.73282)
+```
+
+
+
+```{r}
+duplicated(pmsf)
+pmsf <- pmsf%>% distinct(player_name, .keep_all = TRUE)
+```
+
+## 
+```{r}
+pmsf %>% select(player_name, Pos, salary, win_score) %>%
+  arrange(desc(win_score)) %>% top_n(10)
+```
+## A table with volumes of player_name, POS, Salary and WIN_score is shown for clearing presentation and comparison among players. The original goal of the analysis is to select the best five starting players that my team can afford, which proving that they are worth it based on the provided team and player statistic. A graph of player salary against win score is then plotted for visualisation comparison. Hence, players of high win score and low salary (left top quarter of the graph) is desirable. The same plots are applied to each of the position (POS) point guard, shooting guard, small forward, power forward and centre to evaluate player selection. 
+
+
+
+
+```{r}
+player_labels <- if_else(pmsf$win_score >= 0, paste(pmsf$player_id), "")
+
+pmsf %>% ggplot(aes(salary, win_score, color = Pos )) +
+  geom_point()+
+  geom_text(aes(label= player_labels), nudge_y = 6, nudge_x = 0.25)
+  
+  
+```
+
+## Top 10 point guard
+
+```{r}
+dat_pg <- filter(pmsf, Pos == "PG")
+dat_pg <- subset(dat_pg, select = c("player_name", "player_id" ,"Pos", "salary", "win_score"))
+dat_pg %>% arrange(desc(win_score)) %>% top_n(10)
+```
+
+
+## Top 10 shooting guard
+
+```{r}
+dat_sg <- filter(pmsf, Pos == "SG")
+dat_sg <- subset(dat_sg, select = c("player_name", "player_id" ,"Pos", "salary", "win_score"))
+dat_sg %>% arrange(desc(win_score)) %>% top_n(10)
+
+```
+
+## Top 10 small forward
+
+```{r}
+dat_sf <- filter(pmsf, Pos == "SF")
+dat_sf <- subset(dat_sf, select = c("player_name", "player_id" ,"Pos", "salary", "win_score"))
+dat_sf %>% arrange(desc(win_score)) %>% top_n(10)
+```
+
+## Top 10 power forward
+
+```{r}
+dat_pf <- filter(pmsf, Pos == "PF")
+dat_pf <- subset(dat_pf, select = c("player_name", "player_id" ,"Pos", "salary", "win_score"))
+dat_pf %>% arrange(desc(win_score)) %>% top_n(10) 
+```
+
+## Top 10 center
+
+```{r}
+dat_c <- filter(pmsf, Pos == "C")
+dat_c <- subset(dat_c, select = c("player_name", "player_id" ,"Pos", "salary", "win_score"))
+dat_c %>% arrange(desc(win_score)) %>% top_n(10)
+```
+
+
+## Best five starting players
+
+## The following 5 players are selected:
+## 1) PG- Point Guard - Stephen Curry
+## 2) SG- Shooting Guard - Danny Green
+## 3) SF- Small Forward - Danilo Gallinari
+## 4) PF- Power Forward - Taj Gibson
+## 5) C- Centre - Rudy Gobert
+
+## With total salaries of five starters is 107million, which is under our team next season player contract budget of $118 million.
+
+```{r message=FALSE}
+dat_pg_start <- dat_pg %>% arrange(desc(win_score)) %>% top_n(10)%>% slice_max(1)
+dat_sg_start <- dat_sg %>% arrange(desc(win_score)) %>% top_n(10)%>% slice_max(1)
+dat_sf_start <- dat_sf %>% arrange(desc(win_score)) %>% top_n(10) %>% slice_max(1)
+dat_pf_start <- dat_pf %>% arrange(desc(win_score)) %>% top_n(10)%>% slice_max(1)
+dat_c_start <- dat_c %>% arrange(desc(win_score)) %>% top_n(10)%>% slice_max(1)
+```
+
+```{r}
+dat_start_five <- bind_rows(dat_pg_start,dat_sg_start, dat_sf_start, dat_pf_start, dat_c_start)
+tibble(dat_start_five)
+```
+
+## total salaries of five starters
+```{r}
+exp_salary <- sum(dat_start_five$salary)
+print(exp_salary)
+```
+
+```{r}
+##check the expecting lineup salary 
+exp_salary <- sum(dat_start_five$salary)
+if(exp_salary < 118000000)
+print("Within Buget")
+```
+
+## 6. Summary 
+
+## The specific analysis of this project is a multiple linear regression model that demonstrate relationship between winning percentage and team/player performance measure. One of the critical parts of this project is to choose which types of performance measures to be selected in order to develop the model. In this project, true shoot percentage, turn over, total rebound, Age are applied. However, the selected five players would result in a total contract cost of 106 million. Therefore, given that the rest of the team requires more budget, other players might have to be considered.
+
+
+## By considering model development limitation, limited set of statistics can be one of the limitations in this modelling project. Multiple years of data would be practical in building stronger relative relationship between winning percentage and other team/player performance variables. Secondly, individual player’s statistic such as height, health data, injury history are also factors that should be considered when selecting the team. To conclude, 5 players have been selected based on the winning percentage model within the team specified budget. Further fine tone may be carried out by eliminating the limitation factors. 
+
+
